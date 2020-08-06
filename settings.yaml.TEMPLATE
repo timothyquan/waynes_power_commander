@@ -1,0 +1,35 @@
+appName: waynes_power_commander
+logFile: waynes_power_commander.log
+
+prtg_servers:
+  PRTGServer:
+    type: prtgserver
+    host: <YOURSERVER_IP>
+    url: <YOURSERVER_URL>
+    username: <USERNAME>
+    pass: <PASSHASH>
+
+pdus:
+  rk3-pwr-01:
+    type: apcpdu
+    host: <PDU_IP>
+    username: <USERNAME>
+    pass: <PASSWORD>
+  
+#This is where we can pair multiple objects - typically one PDU outlet and one PRTG sensor, but it can be any number of either type.
+devices:   
+  #These are friendly names, make it something you can visually identify, it will be used for display in the interface
+  DEVICE_1: 
+    
+    #These are is a friendly names, make it something you can visually identify, it will be used for display in the interface
+    #These will show up as column headers in a table so you can see what is on and off. So, it would be a good idea to use the same names in every device with a numeric sequence:
+    #eg; outlet1, outlet2, prtg_device1
+    outlet1: 
+       server: rk3-pwr-01
+       objid: 12 # for outlets, the objid is the outlet number
+    prtg_device1:
+      server: PRTGServer
+      objid: 6326
+    prtg_device2:
+      server: PRTGServer
+      objid: 5967

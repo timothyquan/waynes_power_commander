@@ -10,6 +10,8 @@ from pprint import pprint
 import logging
 from time import sleep
 import threading
+from PRTG import PRTGDevice, PRTGServer
+import pandas as pd
 
 
 class WaynesPowerInterface():
@@ -17,11 +19,10 @@ class WaynesPowerInterface():
         print('Hello, Wayne.')
         running = True
         while running == True:
-            print('Here are the current loaded objects and their status: ')
             self.load_config(config)
             self.display_items()
             while True:
-                print('Would you like to.....')
+                print('\nWould you like to:')
                 select = input(
                     'Power something on (1), power something off (2), exit (x)?: ').lower()
                 if select == '1' or select == '2':
@@ -32,32 +33,78 @@ class WaynesPowerInterface():
                     break
         print('Goodbye, Wayne.')
 
-    def load_config(self, config):
-        print('Loading configuration and checking status....')
+    def get_status(self, item):
+        '''Returns the status of either a PRTGDevice or PDU outlet
+        This is to facilitate the use of the dataframe.applymap method'''
+        return item.get_status()
 
+    def load_config(self, config):
+        '''Parses the configuration yaml, loads the device dataframe'''
+        server_dict = {}
+        self.device_df = pd.DataFrame()
+        print('Loading configuration and checking status....')
+        for server in config['prtg_servers']:
+            server_dict[server] = PRTGServer(
+                config['prtg_servers'][server]['host'],
+                config['prtg_servers'][server]['url'],
+                config['prtg_servers'][server]['username'],
+                config['prtg_servers'][server]['pass']
+            )
+
+        for device in config['devices']:
+            device_dict = {'device': device}
+            for item in config['devices'][device]:
+                device_dict[item] = PRTGDevice(
+                    server_dict[config['devices'][device][item]['server']],
+                    config['devices'][device][item]['objid'],
+                    item
+                )
+            self.device_df = self.device_df.append(
+                device_dict, ignore_index=True)
 
     def display_items(self):
-        print('Here are the items: ')
+        print('Here are the items: \n')
+        status_df = self.device_df.iloc[:, 1:].applymap(self.get_status)
+        print(pd.concat([self.device_df.iloc[:, 0:1],
+                         status_df], axis=1, sort=False))
+
+    def power_on(self, item):
+        '''Accepts either a PRTG device or PDU outlet and powers it on
+        This is to facilitate the use of the dataframe.applymap method'''
+        item.start() 
+
+    def power_off(self, item):
+        '''Accepts either a PRTG device or PDU outlet and powers it off
+        This is to facilitate the use of the dataframe.applymap method'''
+        item.pause() 
 
     def power_toggle(self, power_on):
         onoff = {True: 'on', False: 'off'}
-        ran = False        
+        ran = False
         print(f'\nOk Wayne, lets turn some equipment {onoff[power_on]}.')
         select = input(
             'From the list above you can enter the index number of a piece of equipment (#), multiple indices seperated by commas (#,#,#), all listed items (a): ').lower()
-        try:             
-            print(f'Ok, that is a single integer, {int(select)}.')
+        select_idxs = []
+        try:
+            self.device_df.iloc[int(select), :]
+            select_idxs.append(int(select))
             ran = True
-        except ValueError: 
+        except (KeyError, ValueError,IndexError):
             if select == 'a':
-                if 'y' == input(f'Are you sure you would like to turn ALL items {onoff[power_on]}? (y) to continue: '):
-                    print(f'Ok, turning all items {onoff[power_on]}')
-                ran = True
+                select_idxs = list(range(0, len(self.device_df)))
             elif ',' in select:
-                print('Very good, that is multiple items: ', select.split(','))
-                ran = True        
-        return ran
-
+                try:
+                    for idx in select.split(','):
+                        self.device_df.iloc[int(select):int(select)]
+                        select_idxs.append(idx)                    
+                except (KeyError, ValueError,IndexError):
+                    pass
+        if len(select_idxs) > 0:
+            if power_on:                
+                self.device_df.iloc[select_idxs, 1:].applymap(self.power_on)
+            else:
+                self.device_df.iloc[select_idxs, 1:].applymap(self.power_off)
+            return ran
 
 if __name__ == "__main__":
     with open(r'settings.yaml') as file:
