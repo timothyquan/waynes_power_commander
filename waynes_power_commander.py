@@ -6,12 +6,16 @@ __maintainer__ = "Tim Quan"
 __status__ = "Prototype"
 
 import yaml
-from pprint import pprint
 import logging
-from time import sleep
-import threading
+from logging import handlers
+logger = logging.getLogger(__name__)
 from PRTG import PRTGDevice, PRTGServer
+from APC import pdu, pdu_outlet
 import pandas as pd
+from tabulate import tabulate
+import sys
+import Tkinter
+
 
 
 class WaynesPowerInterface():
@@ -19,9 +23,9 @@ class WaynesPowerInterface():
         print('Hello, Wayne.')
         running = True
         while running == True:
-            self.load_config(config)
-            self.display_items()
+            self.load_config(config)            
             while True:
+                self.display_items()
                 print('\nWould you like to:')
                 select = input(
                     'Power something on (1), power something off (2), exit (x)?: ').lower()
@@ -36,7 +40,11 @@ class WaynesPowerInterface():
     def get_status(self, item):
         '''Returns the status of either a PRTGDevice or PDU outlet
         This is to facilitate the use of the dataframe.applymap method'''
-        return item.get_status()
+        if type(item) is PRTGDevice:
+            return item.get_status()
+        elif type(item) is pdu_outlet:
+            return item.get_status()
+         
 
     def load_config(self, config):
         '''Parses the configuration yaml, loads the device dataframe'''
@@ -50,33 +58,53 @@ class WaynesPowerInterface():
                 config['prtg_servers'][server]['username'],
                 config['prtg_servers'][server]['pass']
             )
+        for server in config['pdus']:
+            server_dict[server] = pdu(
+                server,
+                config['pdus'][server]['host'],
+                config['pdus'][server]['username'],
+                config['pdus'][server]['pass']
+            )
 
         for device in config['devices']:
             device_dict = {'device': device}
             for item in config['devices'][device]:
-                device_dict[item] = PRTGDevice(
-                    server_dict[config['devices'][device][item]['server']],
-                    config['devices'][device][item]['objid'],
-                    item
-                )
+                server = server_dict[config['devices'][device][item]['server']]                                
+                if type(server) is PRTGServer:
+                    device_dict[item] = PRTGDevice(
+                        server,
+                        config['devices'][device][item]['objid'],
+                        item)
+                elif type(server) is pdu:
+                    device_dict[item] = pdu_outlet(
+                        server,
+                        config['devices'][device][item]['objid'])
+
             self.device_df = self.device_df.append(
                 device_dict, ignore_index=True)
 
-    def display_items(self):
-        print('Here are the items: \n')
+    def display_items(self):        
         status_df = self.device_df.iloc[:, 1:].applymap(self.get_status)
-        print(pd.concat([self.device_df.iloc[:, 0:1],
-                         status_df], axis=1, sort=False))
+        print('Here are the items: \n')
+        print(tabulate(pd.concat([self.device_df.iloc[:, 0:1],
+                         status_df], axis=1, sort=False),
+                         headers='keys', tablefmt='psql'))
 
     def power_on(self, item):
         '''Accepts either a PRTG device or PDU outlet and powers it on
         This is to facilitate the use of the dataframe.applymap method'''
-        item.start() 
+        if type(item) is PRTGDevice:
+            item.start() 
+        elif type(item) is pdu_outlet:
+            item.turn_on()
 
     def power_off(self, item):
         '''Accepts either a PRTG device or PDU outlet and powers it off
         This is to facilitate the use of the dataframe.applymap method'''
-        item.pause() 
+        if type(item) is PRTGDevice:
+            item.pause() 
+        elif type(item) is pdu_outlet:
+            item.turn_off()
 
     def power_toggle(self, power_on):
         onoff = {True: 'on', False: 'off'}
@@ -106,12 +134,45 @@ class WaynesPowerInterface():
                 self.device_df.iloc[select_idxs, 1:].applymap(self.power_off)
             return ran
 
+
+def setup_logging(logger_name, log_path,  log_level):
+    '''Accepts a logger_name, path, and logging level
+    ('debug', 'info', 'warn', 'error', 'critical')'''
+
+    log_levels = { 'debug' : logging.DEBUG,
+        'info' : logging.INFO,
+        'warn' : logging.WARN,
+        'error' : logging.ERROR,
+        'critical' : logging.CRITICAL
+    }
+
+    logger = logging.getLogger(logger_name)
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+
+    logging.basicConfig(level=log_levels[log_level],
+        format="%(asctime)s [%(levelname)s] %(message)s")
+
+    log_file_handler = handlers.RotatingFileHandler(log_path, maxBytes=1048576, backupCount=5)
+    log_file_handler.setFormatter(formatter)
+    log_file_handler.setLevel(log_levels[log_level])
+
+    log_console_handler = logging.StreamHandler(sys.stdout)
+    log_console_handler.setFormatter(formatter)
+    log_console_handler.setLevel(log_levels[log_level])
+
+    logger.addHandler(log_file_handler)
+    logger.addHandler(log_console_handler)
+    logger.setLevel(log_levels[log_level])
+
+
+    return logger
+
 if __name__ == "__main__":
     with open(r'settings.yaml') as file:
         config = yaml.full_load(file)
-
-    logging.basicConfig(filename=config['logFile'],
-                        format='%(asctime)s %(levelname)-8s %(message)s',
-                        level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
+    
+    logger = setup_logging('waynes_power_commander', 
+        sys.argv[0].replace('.py', '.log'), 
+        'warn')
 
     WaynesPowerInterface(config)

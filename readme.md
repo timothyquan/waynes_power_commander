@@ -8,11 +8,25 @@ Run it from terminal, or create an executable with pyinstaller.
 
 ![interface flow](https://github.com/timothyquan/waynes_power_commander/blob/master/interface_flow.png?raw=true)
 
-## Todo
+## Requirements
 
-* Create the interface waynes_power_commander
-* Add PRTG functionality from module (by me, not yet on github)
-* Add APC functionality from module - https://github.com/scls19fr/APC
+APC interface uses telnet for broad PDU compatibility; uses wexpect:
+
+'''
+pip install wexpect
+'''
+
+Uses pandas:
+
+'''
+pip install pandas
+'''
+
+Uses tabulate to format output:
+
+'''
+pip install tabulate
+'''
 
 ## License
 
