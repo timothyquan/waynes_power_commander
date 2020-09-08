@@ -8,7 +8,7 @@ block_cipher = None
 a = Analysis(['waynes_power_commander.py'],
              pathex=['Z:\\09-Software - Except Bridge Systems\\waynes_power_commander'],
              binaries=[],
-             datas=[],
+             datas=[('wayne.ico', '.'), ('settings.yaml.TEMPLATE', '.')],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
@@ -28,7 +28,8 @@ exe = EXE(pyz,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=True )
+          console=True,
+          icon='Z:\\09-Software - Except Bridge Systems\\waynes_power_commander\\wayne.ico')
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,

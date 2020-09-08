@@ -3,7 +3,7 @@ __copyright__ = "Copyright 2020"
 __license__ = "MIT"
 __version__ = "1.0"
 __maintainer__ = "Tim Quan"
-__status__ = "Prototype"
+__status__ = "Production"
 
 import yaml
 import logging
@@ -14,9 +14,6 @@ from APC import pdu, pdu_outlet
 import pandas as pd
 from tabulate import tabulate
 import sys
-import Tkinter
-
-
 
 class WaynesPowerInterface():
     def __init__(self, config):
@@ -28,7 +25,7 @@ class WaynesPowerInterface():
                 self.display_items()
                 print('\nWould you like to:')
                 select = input(
-                    'Power something on (1), power something off (2), exit (x)?: ').lower()
+                    'Power something on (1), power something off (2), exit (x), or refresh (enter)?: ').lower()
                 if select == '1' or select == '2':
                     if self.power_toggle(select == '1'):
                         break
@@ -170,9 +167,9 @@ def setup_logging(logger_name, log_path,  log_level):
 if __name__ == "__main__":
     with open(r'settings.yaml') as file:
         config = yaml.full_load(file)
-    
-    logger = setup_logging('waynes_power_commander', 
-        sys.argv[0].replace('.py', '.log'), 
-        'warn')
+        
+    logger = setup_logging(__name__, 
+        config['logFile'], 
+        config['debugLevel'])
 
     WaynesPowerInterface(config)
