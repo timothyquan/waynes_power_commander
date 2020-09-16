@@ -15,13 +15,11 @@ pdus:
   rk3-pwr-01:
     type: apcpdu
     host: <PDU_IP>
-    username: <USERNAME>
-    pass: <PASSWORD>
+    community: <COMMUNITYSTRING>
   rk5-pwr-01:
     type: apcpdu
     host: <PDU_IP>
-    username: <USERNAME>
-    pass: <PASSWORD>
+    community: <COMMUNITYSTRING>
 
 devices: #This is where we can pair multiple objects - typically one PDU outlet and one PRTG sensor, but it can be any number of either type.
   DEVICE_1: #These are friendly names, make it something you can visually identify, it will be used for display in the interface

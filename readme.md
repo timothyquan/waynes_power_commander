@@ -10,10 +10,12 @@ Run it from terminal, or create an executable with pyinstaller.
 
 ## Requirements
 
-APC interface uses telnet for broad PDU compatibility; uses wexpect:
+This has been tested with APC PDU models AP8959NA3, AP8959. OIDs from APC powernet432.mib, https://www.apc.com/shop/mk/en/products/PowerNet-MIB-v4-3-3/P-SFPMIB433,(iso.org.dod.internet.private.enterprises.apc.products.hardware.rPDU) 
+
+apc_snmp uses pysnmp:
 
 '''
-pip install wexpect
+pip install pysnmp
 '''
 
 Uses pandas:

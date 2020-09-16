@@ -10,7 +10,7 @@ import logging
 from logging import handlers
 logger = logging.getLogger(__name__)
 from PRTG import PRTGDevice, PRTGServer
-from APC import pdu, pdu_outlet
+from apc_snmp import pdu, pdu_outlet
 import pandas as pd
 from tabulate import tabulate
 import sys
@@ -37,6 +37,7 @@ class WaynesPowerInterface():
     def get_status(self, item):
         '''Returns the status of either a PRTGDevice or PDU outlet
         This is to facilitate the use of the dataframe.applymap method'''
+        print('.', end='')
         if type(item) is PRTGDevice:
             return item.get_status()
         elif type(item) is pdu_outlet:
@@ -47,7 +48,7 @@ class WaynesPowerInterface():
         '''Parses the configuration yaml, loads the device dataframe'''
         server_dict = {}
         self.device_df = pd.DataFrame()
-        print('Loading configuration and checking status....')
+        print('Loading configuration and checking status....', end = '')
         for server in config['prtg_servers']:
             server_dict[server] = PRTGServer(
                 config['prtg_servers'][server]['host'],
@@ -59,8 +60,7 @@ class WaynesPowerInterface():
             server_dict[server] = pdu(
                 server,
                 config['pdus'][server]['host'],
-                config['pdus'][server]['username'],
-                config['pdus'][server]['pass']
+                config['pdus'][server]['community'],
             )
 
         for device in config['devices']:
@@ -90,6 +90,7 @@ class WaynesPowerInterface():
     def power_on(self, item):
         '''Accepts either a PRTG device or PDU outlet and powers it on
         This is to facilitate the use of the dataframe.applymap method'''
+        print('.', end='')
         if type(item) is PRTGDevice:
             item.start() 
         elif type(item) is pdu_outlet:
@@ -98,6 +99,7 @@ class WaynesPowerInterface():
     def power_off(self, item):
         '''Accepts either a PRTG device or PDU outlet and powers it off
         This is to facilitate the use of the dataframe.applymap method'''
+        print('.', end='')
         if type(item) is PRTGDevice:
             item.pause() 
         elif type(item) is pdu_outlet:
@@ -117,11 +119,11 @@ class WaynesPowerInterface():
         except (KeyError, ValueError,IndexError):
             if select == 'a':
                 select_idxs = list(range(0, len(self.device_df)))
-            elif ',' in select:
+            elif ',' in select: 
                 try:
                     for idx in select.split(','):
-                        self.device_df.iloc[int(select):int(select)]
-                        select_idxs.append(idx)                    
+                        self.device_df.iloc[int(idx):int(idx)]
+                        select_idxs.append(int(idx))   
                 except (KeyError, ValueError,IndexError):
                     pass
         if len(select_idxs) > 0:
