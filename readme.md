@@ -30,6 +30,12 @@ Uses tabulate to format output:
 pip install tabulate
 '''
 
+Uses tqdm for progress bars:
+
+'''
+pip install tqdm
+'''
+
 
 
 ## License

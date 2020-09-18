@@ -11,14 +11,16 @@ from logging import handlers
 logger = logging.getLogger(__name__)
 from PRTG import PRTGDevice, PRTGServer
 from apc_snmp import pdu, pdu_outlet
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
 from tabulate import tabulate
+from tqdm import tqdm 
 import sys
 
 
 class WaynesPowerInterface():
-    def __init__(self, config):
-        self.threads = []
+    def __init__(self, config):        
         print('Hello, Wayne.')
         running = True
         while running == True:
@@ -36,10 +38,10 @@ class WaynesPowerInterface():
                     break
         print('Goodbye, Wayne.')
 
+
     def get_status(self, item):
         '''Returns the status of either a PRTGDevice or PDU outlet
         This is to facilitate the use of the dataframe.applymap method'''
-        print('.', end='')
         if type(item) is PRTGDevice:
             return item.get_status()
         elif type(item) is pdu_outlet:
@@ -49,22 +51,22 @@ class WaynesPowerInterface():
         '''Parses the configuration yaml, loads the device dataframe'''
         server_dict = {}
         self.device_df = pd.DataFrame()
-        print('Loading configuration and checking status....', end = '')
-        for server in config['prtg_servers']:
+        print('Reading configuration...')
+        for server in tqdm(config['prtg_servers'], desc='Loading PRTG Servers'):
             server_dict[server] = PRTGServer(
                 config['prtg_servers'][server]['host'],
                 config['prtg_servers'][server]['url'],
                 config['prtg_servers'][server]['username'],
                 config['prtg_servers'][server]['pass']
             )
-        for server in config['pdus']:
+        for server in tqdm(config['pdus'], desc='Loading PDUs'):
             server_dict[server] = pdu(
                 server,
                 config['pdus'][server]['host'],
                 config['pdus'][server]['community'],
             )
 
-        for device in config['devices']:
+        for device in tqdm(config['devices'], desc='Loading Devices'):
             device_dict = {'device': device}
             for item in config['devices'][device]:
                 server = server_dict[config['devices'][device][item]['server']]                                
@@ -81,19 +83,18 @@ class WaynesPowerInterface():
             self.device_df = self.device_df.append(
                 device_dict, ignore_index=True)
         self.device_df = self.device_df.reindex(sorted(self.device_df), axis=1)                            
-
-    def display_items(self):        
-        status_df = self.device_df.iloc[:, 1:].applymap(self.get_status)
+    def display_items(self): 
+        tqdm.pandas(desc='Checking status')
+        status_df = self.device_df.iloc[:, 1:].progress_applymap(self.get_status)
         tabulated = tabulate(pd.concat([self.device_df.iloc[:, 0:1],
                          status_df], axis=1, sort=False),
-                         headers='keys', tablefmt='pretty')
+                         headers='keys', tablefmt='pretty')                         
         print('\nHere are the devices: \n')
         print(tabulated)                                          
 
     def power_on(self, item):
         '''Accepts either a PRTG device or PDU outlet and powers it on
         This is to facilitate the use of the dataframe.applymap method'''
-        print('.', end='')
         if type(item) is PRTGDevice:
             item.start() 
         elif type(item) is pdu_outlet:
@@ -102,7 +103,6 @@ class WaynesPowerInterface():
     def power_off(self, item):
         '''Accepts either a PRTG device or PDU outlet and powers it off
         This is to facilitate the use of the dataframe.applymap method'''
-        print('.', end='')
         if type(item) is PRTGDevice:
             item.pause() 
         elif type(item) is pdu_outlet:
@@ -130,10 +130,11 @@ class WaynesPowerInterface():
                 except (KeyError, ValueError,IndexError):
                     pass
         if len(select_idxs) > 0:
+            tqdm.pandas(desc=f'Powering {onoff[power_on]}')     
             if power_on:                
-                self.device_df.iloc[select_idxs, 1:].applymap(self.power_on)
+                self.device_df.iloc[select_idxs, 1:].progress_applymap(self.power_on)
             else:
-                self.device_df.iloc[select_idxs, 1:].applymap(self.power_off)
+                self.device_df.iloc[select_idxs, 1:].progress_applymap(self.power_off)
             return ran
 
 def setup_logging(logger_name, log_path,  log_level):
