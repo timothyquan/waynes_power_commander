@@ -15,8 +15,10 @@ import pandas as pd
 from tabulate import tabulate
 import sys
 
+
 class WaynesPowerInterface():
     def __init__(self, config):
+        self.threads = []
         print('Hello, Wayne.')
         running = True
         while running == True:
@@ -42,8 +44,7 @@ class WaynesPowerInterface():
             return item.get_status()
         elif type(item) is pdu_outlet:
             return item.get_status()
-         
-
+                    
     def load_config(self, config):
         '''Parses the configuration yaml, loads the device dataframe'''
         server_dict = {}
@@ -79,13 +80,15 @@ class WaynesPowerInterface():
 
             self.device_df = self.device_df.append(
                 device_dict, ignore_index=True)
+        self.device_df = self.device_df.reindex(sorted(self.device_df), axis=1)                            
 
     def display_items(self):        
         status_df = self.device_df.iloc[:, 1:].applymap(self.get_status)
-        print('Here are the items: \n')
-        print(tabulate(pd.concat([self.device_df.iloc[:, 0:1],
+        tabulated = tabulate(pd.concat([self.device_df.iloc[:, 0:1],
                          status_df], axis=1, sort=False),
-                         headers='keys', tablefmt='psql'))
+                         headers='keys', tablefmt='pretty')
+        print('\nHere are the devices: \n')
+        print(tabulated)                                          
 
     def power_on(self, item):
         '''Accepts either a PRTG device or PDU outlet and powers it on
@@ -110,7 +113,7 @@ class WaynesPowerInterface():
         ran = False
         print(f'\nOk Wayne, lets turn some equipment {onoff[power_on]}.')
         select = input(
-            'From the list above you can enter the index number of a piece of equipment (#), multiple indices seperated by commas (#,#,#), all listed items (a): ').lower()
+            'From the list above you can enter the index number of a piece of equipment (#), multiple indices seperated by commas (#,#,#), all listed devices (a): ').lower()
         select_idxs = []
         try:
             self.device_df.iloc[int(select), :]
@@ -132,7 +135,6 @@ class WaynesPowerInterface():
             else:
                 self.device_df.iloc[select_idxs, 1:].applymap(self.power_off)
             return ran
-
 
 def setup_logging(logger_name, log_path,  log_level):
     '''Accepts a logger_name, path, and logging level
