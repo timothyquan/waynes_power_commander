@@ -29,10 +29,10 @@ class WaynesPowerInterface():
                 self.display_items()
                 print('\nWould you like to:')
                 select = input(
-                    'Power something on (1), power something off (2), exit (x), or refresh (enter)?: ').lower()
+                    'Power something on (1), power something off (2), exit (x), or refresh (enter)?: \n').lower()
                 if select == '1' or select == '2':
                     if self.power_toggle(select == '1'):
-                        break
+                        pass
                 elif select == 'x':
                     running = False
                     break
@@ -113,7 +113,7 @@ class WaynesPowerInterface():
         ran = False
         print(f'\nOk Wayne, lets turn some equipment {onoff[power_on]}.')
         select = input(
-            'From the list above you can enter the index number of a piece of equipment (#), multiple indices seperated by commas (#,#,#), all listed devices (a): ').lower()
+            'From the list above you can enter the index number of a piece of equipment (#), multiple indices seperated by commas (#,#,#), all listed devices (a): \n').lower()
         select_idxs = []
         try:
             self.device_df.iloc[int(select), :]
