@@ -14,9 +14,7 @@ This has been tested with APC PDU models AP8959NA3, AP8959. OIDs from APC powern
 
 apc_snmp uses pysnmp:
 
-'''
-pip install pysnmp
-'''
+`pip install pysnmp`
 
 Uses pandas:
 
