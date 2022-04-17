@@ -20,21 +20,16 @@ pip install pysnmp
 
 Uses pandas:
 
-'''
-pip install pandas
-'''
+
+`pip install pandas`
 
 Uses tabulate to format output:
 
-'''
-pip install tabulate
-'''
+`pip install tabulate`
 
 Uses tqdm for progress bars:
 
-'''
-pip install tqdm
-'''
+`pip install tqdm`
 
 
 
